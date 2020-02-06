@@ -1,0 +1,15 @@
+<nav search_view="search" color="#373a3c">
+  
+  <collection label="Splunk">
+  	<view name="data_models" />
+  	<view name="reports" />
+  	<view name="alerts" />
+  	<view name="dashboards" />
+  </collection>
+  
+
+
+  <view name="Latest" default="true" />
+   <view name="Trending" />
+    	<view name="search"  />
+</nav>

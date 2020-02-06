@@ -1,0 +1,261 @@
+<form>
+  <label>Latest Activity</label>
+  <description>View the top devices, models, and tags over your desired timeframe.</description>
+  <!-- First row of a single comment -->
+  <!-- Second row of 2 panels -->
+  <init>
+    <set token="model">*</set>
+    <set token="ip">*</set>
+    <set token="tag">*</set>
+    <set token="low">0</set>
+    <set token="high">100</set>
+    <set token="index">*</set>
+  </init>
+  <fieldset submitButton="true" autoRun="true">
+    <input type="time" token="timeInputStart" searchWhenChanged="true">
+      <label>Timeframe</label>
+      <default>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="text" token="low" searchWhenChanged="true">
+      <label>Score - Lower Bound</label>
+      <default>$low$</default>
+      <initialValue>$low$</initialValue>
+    </input>
+    <input type="text" token="high" searchWhenChanged="true">
+      <label>Score - Upper Bound</label>
+      <default>$high$</default>
+      <initialValue>$high$</initialValue>
+    </input>
+    <input type="text" token="ip" searchWhenChanged="true">
+      <label>IP Search</label>
+      <default>$ip$</default>
+    </input>
+    <input type="dropdown" token="model" searchWhenChanged="true">
+      <label>Model Search</label>
+      <default>*</default>
+      <fieldForLabel>name</fieldForLabel>
+      <fieldForValue>name</fieldForValue>
+      <search>
+        <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &gt; $low$ | where score*100 &lt; $high$ |  rex field=model.name "(?&lt;BreachType&gt;[^:]+)" | rex field=model.name "::(?P&lt;name&gt;[^,]*?)$" |  eval BreachHeader=BreachType  | eval name=if(isnull(name), BreachHeader, name) | search model.action="breach" OR model.actions.breach = true | stats count by name | sort +str(name)</query>
+        <earliest>$timeInputStart.earliest$</earliest>
+        <latest>$timeInputStart.latest$</latest>
+      </search>
+    </input>
+    <input type="dropdown" token="tag" searchWhenChanged="true">
+      <label>Tag Search</label>
+      <default>*</default>
+      <search>
+        <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | spath output=device_tag_temp path=device.tags{}.name | eval device_tag = coalesce(device_tag_temp,"None") | dedup darktraceUrl,device_tag | where score*100 &gt; $low$ | where score*100 &lt; $high$ | rename device_tag AS Tag | sort +str(Tag) | stats count by Tag</query>
+        <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+      </search>
+      <fieldForLabel>Tag</fieldForLabel>
+      <fieldForValue>Tag</fieldForValue>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <single>
+        <title>Critical Severity</title>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &lt; 100 | where score*100 &gt; 75 | search model.action = "breach" OR model.actions.breach = true | stats count</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xd93f3c","0xd93f3c","0xd93f3c","0xd93f3c","0xd93f3c"]</option>
+        <option name="underLabel">75% - 100%</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+        <drilldown>
+          <set token="low">75</set>
+          <set token="high">100</set>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>High Severity</title>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &lt; 75 | where score*100 &gt; 50 | search model.action = "breach" OR model.actions.breach = true | stats count</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf58f39","0xf58f39","0xf58f39","0xf58f39","0xf58f39"]</option>
+        <option name="underLabel">50% - 75%</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+        <drilldown>
+          <set token="low">50</set>
+          <set token="high">75</set>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Medium Severity</title>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &lt; 50 | where score*100 &gt; 25 | search model.action = "breach" OR model.actions.breach = true | stats count</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf7bc38","0xf7bc38","0xf7bc38","0xf7bc38","0xf7bc38"]</option>
+        <option name="underLabel">25% - 50%</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+        <drilldown>
+          <set token="low">25</set>
+          <set token="high">50</set>
+        </drilldown>
+      </single>
+    </panel>
+    <panel>
+      <single>
+        <title>Low Severity</title>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &lt; 25 | where score*100 &gt; 0 | search model.action = "breach" OR model.actions.breach = true | stats count</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+        </search>
+        <option name="colorMode">none</option>
+        <option name="drilldown">all</option>
+        <option name="numberPrecision">0</option>
+        <option name="rangeColors">["0xf5d91f","0xf5d91f","0xf5d91f","0xf5d91f","0xf5d91f"]</option>
+        <option name="underLabel">0% - 25%</option>
+        <option name="unitPosition">after</option>
+        <option name="useColors">1</option>
+        <option name="useThousandSeparators">0</option>
+        <drilldown>
+          <set token="low">0</set>
+          <set token="high">25</set>
+        </drilldown>
+      </single>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Top Devices by Timeframe and Score</title>
+      <chart>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &gt; $low$ | where score*100 &lt; $high$ | rex field=darktraceUrl "(?&lt;url&gt;[^#]+)" | eval deviceID='device.did' | eval newUrl=url."#device/".deviceID | search model.action = "breach" OR model.actions.breach = true | spath output=hostname path=device.hostname | spath output=ipaddr path=device.ip | eval final = coalesce(hostname,ipaddr) | stats count by final | sort by -count  | rename count AS Count  | rename final AS "Device Hostname/IP" | head 10</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+          <refresh>30s</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">45</option>
+        <option name="charting.axisTitleX.text">Device Hostname/IP</option>
+        <option name="charting.axisTitleY.text">Breach Count</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisEnd</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">[0xe67e22,0x3498db,0x34495e]</option>
+        <option name="height">315</option>
+        <drilldown>
+          <set token="ip">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Top Models by Timeframe and Score</title>
+      <chart>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &gt; $low$ | where score*100 &lt; $high$ | rex field=model.name "(?&lt;BreachType&gt;[^:]+)" |  rex field=model.name "::(?P&lt;name&gt;[^,]*?)$" | search model.action = "breach" OR model.actions.breach = true | eval BreachHeader=BreachType | eval BreachType=if(isnull(name), "N/A", BreachType) | eval name=if(isnull(name), BreachHeader, name) | stats count by name | sort by -count | rename name AS "Model Name" | rename count AS Count | head 10</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+          <refresh>30s</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">45</option>
+        <option name="charting.axisTitleX.text">Breach Type</option>
+        <option name="charting.axisTitleY.text">Breach Count</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisEnd</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">[0xf1c40f,0x3498db,0xe67e22,]</option>
+        <option name="height">392</option>
+        <drilldown>
+          <set token="model">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+    <panel>
+      <title>Top Tags by Timeframe and Score</title>
+      <chart>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | where score*100 &gt; $low$ | where score*100 &lt; $high$ | search model.action = "breach" OR model.actions.breach = true | stats count by device.tags{}.name | sort by -count | rename device.tags{}.name AS Tag | rename count AS Count | head 10</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+          <refresh>30s</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">45</option>
+        <option name="charting.axisTitleX.text">Tag</option>
+        <option name="charting.axisTitleY.text">Breach Count</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.showDataLabels">minmax</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.drilldown">all</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.legend.placement">none</option>
+        <option name="charting.seriesColors">[0x3498db,0xe67e22,0x34495e]</option>
+        <option name="height">325</option>
+        <drilldown>
+          <set token="tag">$click.value$</set>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Model Breaches in Timeframe</title>
+      <table>
+        <search>
+          <query>index=* sourcetype=darktrace | eval darktraceUrl = coalesce(breachUrl,modbreachUrl) | dedup darktraceUrl | rename creationTime AS Time | fieldformat Time = strftime(Time/1000," %A %b %e, %Y %R:%S") |  eval darktraceUrl=darktraceUrl | eval score=score*100 | where score &gt; $low$ | where score &lt; $high$ | rex field=model.name "(?&lt;BreachType&gt;[^:]+)"  | eval BreachHeader=BreachType  | eval name=if(isnull(name), BreachHeader, name) | rex field=model.name "::(?P&lt;name&gt;[^,]*?)$" | search device.ip="$ip$"  | eval BreachType=if(BreachType=name,"No Type",BreachType) | search name="$model$" | spath output=device_tag_temp path=device.tags{}.name | eval device_tag = coalesce(device_tag_temp,"None") | search (device_tag="$tag$") | search model.action = "breach" OR model.actions.breach = true | table Time,BreachType,name,model.priority,score,device.hostname,device.ip,device_tag,darktraceUrl | rename BreachType AS "Breach Type" | rename name AS "Model Name" | rename score AS Score | rename device.hostname AS Hostname | rename device.ip AS IP | rename device_tag AS Tags | rename darktraceUrl AS "FQDN" | rename model.priority AS Priority</query>
+          <earliest>$timeInputStart.earliest$</earliest>
+          <latest>$timeInputStart.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+          <refresh>30s</refresh>
+          <refreshType>delay</refreshType>
+        </search>
+        <option name="count">50</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">row</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="number" field="Score">
+          <option name="precision">1</option>
+        </format>
+        <drilldown>
+          <link target="_blank">$row.FQDN|n$</link>
+        </drilldown>
+      </table>
+    </panel>
+  </row>
+</form>
